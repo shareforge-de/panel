@@ -1,0 +1,12 @@
+.kyle-host-primary {
+    background-color: #21295cff;
+}
+
+.kyle-host {
+    /* CSS HEX */
+    --space-cadet: #21295cff;
+    --yale-blue: #1b3b6fff;
+    --lapis-lazuli: #065a82ff;
+    --cerulean: #1c7293ff;
+    --powder-blue: #9eb3c2ff;
+}

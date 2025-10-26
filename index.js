@@ -158,6 +158,129 @@ apifiles.forEach(file => {
 	apifile.load(app, db);
 });
 
+
+// AFK Heartbeat Route (Backend-Centric Coin Awarding via Keyv/SQLite) - FIXED
+app.post('/api/afk-heartbeat', async (req, res) => {
+//  console.log('[AFK Debug] Heartbeat received from user:', req.session.userinfo ? req.session.userinfo.id : 'unknown');
+  
+  // Authentication: Require logged-in user via session
+  if (!req.session.userinfo) {
+    console.log('[AFK Debug] Unauthorized heartbeat - no session');
+    return res.status(401).json({ error: 'Unauthorized - must be logged in' });
+  }
+  const userId = req.session.userinfo.id;
+  const { afkSession, elapsedSinceStart } = req.body;  // elapsed is client-reported but not trusted
+
+  if (!afkSession) {
+    console.log('[AFK Debug] Invalid session in heartbeat');
+    return res.status(400).json({ error: 'Invalid session' });
+  }
+
+  try {
+    const sessionKey = `afk_session_${userId}`;
+    const coinsKey = `coins-${userId}`;  // Matches your existing coin key format (e.g., "coins-123")
+    
+    // Get session data from DB (do NOT update yet)
+    let sessionData = await db.get(sessionKey);
+    const now = Date.now();
+    
+    if (!sessionData) {
+      // New session: No previous time, so timeSinceLast = 0 (no award, just init)
+      console.log(`[AFK Debug] New AFK session for user ${userId} - initializing`);
+      sessionData = {
+        startTime: now,
+        lastHeartbeat: now,  // Set to now for future calcs
+        totalEarnedInSession: 0
+      };
+      const timeSinceLast = 0;  // Explicitly 0 for new sessions
+      await db.set(sessionKey, sessionData);  // Save immediately
+      console.log(`[AFK Debug] New session created. timeSinceLast: ${timeSinceLast}s`);
+      return res.json({ 
+        success: true, 
+        earnedThisHeartbeat: 0, 
+        message: 'New session started' 
+      });
+    } else {
+      // Existing session: Calculate using OLD lastHeartbeat
+      const oldLastHeartbeat = sessionData.lastHeartbeat;
+      const timeSinceLast = (now - oldLastHeartbeat) / 1000;  // Seconds since LAST heartbeat
+      
+      // Now update lastHeartbeat to current time (for next calc)
+      sessionData.lastHeartbeat = now;
+      await db.set(sessionKey, sessionData);  // Save updated session
+      
+    //  console.log(`[AFK Debug] Existing session for user ${userId}. Old last: ${oldLastHeartbeat}, Now: ${now}, timeSinceLast: ${timeSinceLast}s`);
+      
+      const minInterval = 20;  // Min time between heartbeats (to prevent spam; < HEARTBEAT_INTERVAL=30s)
+      
+      if (timeSinceLast < minInterval) {
+        // Too frequent - ignore to prevent abuse
+        console.log(`[AFK Debug] Heartbeat too soon - ignoring (time: ${timeSinceLast}s < ${minInterval}s)`);
+        return res.json({ success: true, earnedThisHeartbeat: 0, message: 'Heartbeat too soon' });
+      }
+      
+      // Get AFK settings (fallback if not enabled)
+      const afkSettings = settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"] : null;
+      if (!afkSettings || !settings.api.arcio.enabled) {
+        console.log('[AFK Debug] AFK not enabled in settings - no awards');
+        return res.json({ success: true, earnedThisHeartbeat: 0, message: 'AFK disabled' });
+      }
+      
+      const afkInterval = afkSettings.every || 10;
+      const coinsPerInterval = afkSettings.coins || 1;
+      
+      // Calculate coins to award: Proportional to time elapsed (full award every afkInterval seconds)
+      // E.g., if 30s heartbeat and afkInterval=10s, award 3x coins (but cap if needed)
+      const coinsPerSecond = coinsPerInterval / afkInterval;  // e.g., 1 coin / 10s = 0.1/sec
+      let earnedThisHeartbeat = Math.floor(coinsPerSecond * timeSinceLast);
+      
+      // Cap: Don't award more than, say, 2x full interval per heartbeat
+      const maxPerHeartbeat = coinsPerInterval * 2;
+      earnedThisHeartbeat = Math.min(earnedThisHeartbeat, maxPerHeartbeat);
+      
+      // console.log(`[AFK Debug] Calculated award: ${earnedThisHeartbeat} coins (interval: ${afkInterval}s, per sec: ${coinsPerSecond}, time: ${timeSinceLast}s)`);
+      
+      if (earnedThisHeartbeat > 0) {
+        // Get current coins (matches your renderdataeval format)
+        let currentCoins = await db.get(coinsKey) || 0;
+        if (typeof currentCoins !== 'number') currentCoins = 0;
+        
+        // Award and save (direct write via Keyv to SQLite)
+        const newCoins = currentCoins + earnedThisHeartbeat;
+        await db.set(coinsKey, newCoins);
+        
+        // Update session total
+        sessionData.totalEarnedInSession += earnedThisHeartbeat;
+        await db.set(sessionKey, sessionData);  // Re-save with updated total
+        
+      //  console.log(`[AFK] Awarded ${earnedThisHeartbeat} coins to user ${userId} | Old: ${currentCoins} | New: ${newCoins} | Session total: ${sessionData.totalEarnedInSession}`);
+      } else {
+        console.log('[AFK Debug] No coins awarded this heartbeat (0 calculated)');
+      }
+      setTimeout(async () => {
+        const currentSession = await db.get(sessionKey);
+        if (currentSession && (Date.now() - currentSession.lastHeartbeat > 300000)) {
+          await db.delete(sessionKey);
+          console.log(`[AFK] Expired inactive session for user ${userId}`);
+        }
+      }, 300000);
+      
+      res.json({
+        success: true,
+        earnedThisHeartbeat,
+        newBalance: await db.get(coinsKey) || 0,
+        message: 'Session active'
+      });
+    }
+    
+  } catch (err) {
+    console.error('[AFK] Heartbeat error:', err);
+    res.status(500).json({ error: 'Failed to process heartbeat' });
+  }
+});
+
+
+
 app.all("*", async (req, res) => {
   if (req.session.pterodactyl) if (req.session.pterodactyl.id !== await db.get("users-" + req.session.userinfo.id)) return res.redirect("/login?prompt=none");
   let theme = indexjs.get(req);

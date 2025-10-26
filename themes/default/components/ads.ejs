@@ -1,15 +1,25 @@
-<% if (settings.ads.enabled == true) { %>
-         <div class="row ">
-              <div class="col-12 grid-margin">
-                <div class="card">
-                  <div class="card-body">
-                    <h4 class="card-title">Advertisement</h4>
-                    <div class="table-responsive">
-                      <%= settings.ads.script %>
-                    <!-- Advertisement code here -->
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-<% } %>
+<% if (settings.ads.enabled==true) { %>
+  <div class="row ">
+    <div class="col-12 grid-margin">
+      <div class="card">
+        <div class="card-body">
+          <h4 class="card-title">Advertisement</h4>
+          <div class="table-responsive">
+            <%= settings.ads.script %>
+              <script type="text/javascript">
+                atOptions = {
+                  'key': '3acd4fe0f2a632924316e94c509fe819',
+                  'format': 'iframe',
+                  'height': 250,
+                  'width': 300,
+                  'params': {}
+                };
+              </script>
+              <script type="text/javascript"
+                src="https://www.highperformanceformat.com/3acd4fe0f2a632924316e94c509fe819/invoke.js"></script>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>

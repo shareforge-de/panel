@@ -1,3 +1,5 @@
+@import url("./secondary-styles.css");
+
 /*-------------------------------------------------------------------
   ===== Table of Contents =====
 
@@ -7430,7 +7432,7 @@
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/main/LICENSE)
  */
 :root {
-  --blue: #5E50F9;
+  --blue: #1d0efa;
   --indigo: #6610f2;
   --purple: #6a008a;
   --pink: #E91E63;
@@ -7442,8 +7444,8 @@
   --cyan: #57c7d4;
   --white: #ffffff;
   --gray: #6c757d;
-  --gray-dark: #12151e;
-  --blue: #5E50F9;
+  --gray-dark: #1c1d20;
+  --blue: #1d0efa;
   --indigo: #6610f2;
   --purple: #6a008a;
   --pink: #E91E63;
