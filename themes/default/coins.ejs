@@ -80,8 +80,8 @@
     <!-- Custom AFK Detection and Countdown Script -->
     <script>
       // EJS variables embedded into JS (assumes settings are available; fallback to defaults if not)
-      const afkInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].every : 10 %>;
-      const coinsPerInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].coins : 1 %>;
+      <!-- const afkInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].every : 10 %>; -->
+      <!-- const coinsPerInterval = <%= typeof settings !== 'undefined' && settings.api && settings.api.arcio && settings.api.arcio["afk page"] ? settings.api.arcio["afk page"].coins : 1 %>; -->
 
       // Global flag to track if hostingcloud script is running (not blocked)
       let isScriptRunning = false;
